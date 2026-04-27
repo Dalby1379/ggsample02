@@ -128,12 +128,12 @@ static GLuint createProgram(const char* vsrc, const char* pv, const char* fsrc, 
 // 頂点配列オブジェクトの作成
 //
 //   vertices: 頂点数
-//   position: 頂点の二次元位置 (GLfloat[2] の配列)
-//   lines: 線分数
+//   position: 頂点の三次元位置 (GLfloat[3] の配列)
+//   elements: 頂点インデックスの要素数
 //   index: 線分の頂点インデックス
 //   戻り値: 作成された頂点配列オブジェクト名
 //
-static GLuint createObject(GLuint vertices, const GLfloat(*position)[2], GLuint lines, const GLuint* index)
+static GLuint createObject(GLuint vertices, const GLfloat(*position)[3], GLuint elements, const GLuint* index)
 {
   // 頂点配列オブジェクト
   GLuint vao;
@@ -144,16 +144,16 @@ static GLuint createObject(GLuint vertices, const GLfloat(*position)[2], GLuint 
   GLuint vbo;
   glGenBuffers(1, &vbo);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat[2]) * vertices, position, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat[3]) * vertices, position, GL_STATIC_DRAW);
 
   // インデックスバッファオブジェクト
   GLuint ibo;
   glGenBuffers(1, &ibo);
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * lines, index, GL_STATIC_DRAW);
+  glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint) * elements, index, GL_STATIC_DRAW);
 
   // 結合されている頂点バッファオブジェクトを in 変数から参照できるようにする
-  glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+  glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
   glEnableVertexAttribArray(0);
 
   // 頂点配列オブジェクトの結合を解除した後に頂点バッファオブジェクトとインデックスバッファオブジェクトの結合を解除する
@@ -201,12 +201,16 @@ int GgApp::main(int argc, const char* const* argv)
   const auto program{ createProgram(vsrc, "pv", fsrc, "fc") };
 
   // 頂点属性
-  static const GLfloat position[][2]
+  static const GLfloat position[][3]
   {
-    { -0.5f, -0.5f },
-    {  0.5f, -0.5f },
-    {  0.5f,  0.5f },
-    { -0.5f,  0.5f }
+    { -0.9f,  0.9f, -0.9f },
+    {  0.9f,  0.9f, -0.9f },
+    {  0.9f, -0.9f, -0.9f },
+    { -0.9f, -0.9f, -0.9f },
+    { -0.9f,  0.9f,  0.9f },
+    {  0.9f,  0.9f,  0.9f },
+    {  0.9f, -0.9f,  0.9f },
+    { -0.9f, -0.9f,  0.9f }
   };
 
   // 頂点数
@@ -215,14 +219,16 @@ int GgApp::main(int argc, const char* const* argv)
   // 頂点インデックス
   static const GLuint index[]
   {
-    0, 2, 1, 3
+    0, 1, 1, 2, 2, 3, 3, 0,
+    4, 5, 5, 6, 6, 7, 7, 4,
+    0, 4, 1, 5, 2, 6, 3, 7
   };
 
-  // 稜線数
-  constexpr auto lines{ static_cast<GLuint>(std::size(index)) };
+  // 頂点インデックスの要素数
+  constexpr auto elements{ static_cast<GLuint>(std::size(index)) };
 
   // 頂点配列オブジェクトの作成
-  const auto vao{ createObject(vertices, position, lines, index) };
+  const auto vao{ createObject(vertices, position, elements, index) };
 
   // ウィンドウが開いている間繰り返す
   while (window)
@@ -237,7 +243,7 @@ int GgApp::main(int argc, const char* const* argv)
     glBindVertexArray(vao);
 
     // 図形の描画
-    glDrawElements(GL_LINE_LOOP, lines, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_LINES, elements, GL_UNSIGNED_INT, 0);
 
     // 頂点配列オブジェクトの指定解除
     glBindVertexArray(0);
